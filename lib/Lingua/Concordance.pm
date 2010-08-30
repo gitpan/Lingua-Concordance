@@ -3,21 +3,25 @@ package Lingua::Concordance;
 # Concordance.pm - keyword-in-context (KWIC) search interface
 
 # Eric Lease Morgan <eric_morgan@infomotions.com>
-# June 7, 2009 - first investigations
-# June 8, 2009 - tweaked _by_match; still doesn't work quite right
+# June    7, 2009 - first investigations
+# June    8, 2009 - tweaked _by_match; still doesn't work quite right
+# August 29, 2010 - added scale, positions, and map methods
 
 
 # configure defaults
 use constant RADIUS  => 20;
 use constant SORT    => 'none';
 use constant ORDINAL => 1;
+use constant SCALE   => 10;
 
 # include
 use strict;
 use warnings;
+use Math::Round;
 
 # define
-our $VERSION = '0.01';
+our $VERSION = '0.02';
+
 
 sub new {
 
@@ -31,6 +35,7 @@ sub new {
 	$self->{ radius }  = RADIUS;
 	$self->{ sort }    = SORT;
 	$self->{ ordinal } = ORDINAL;
+	$self->{ scale }   = SCALE;
 	
 	# return
 	return bless $self, $class;
@@ -69,6 +74,74 @@ sub query {
 	if ( $query ) { $self->{ query } = $query }
 	return $self->{ query };
 	
+}
+
+
+sub scale {
+
+	# get input; check & set; return
+	my ( $self, $scale ) = @_;
+	if ( $scale ) { $self->{ scale } = $scale }
+	return $self->{ scale };
+	
+}
+
+
+sub map {
+
+	# get input
+	my ( $self ) = shift;
+
+	# initialize 
+	my %map       = ();
+	my $scale     = $self->scale;
+	my @positions = $self->positions;
+	my $length    = length( $self->text );
+	
+	for ( my $i = 1; $i <= $scale; $i++ ) { $map{ round(( $i * ( 100 / $scale ))) } = 0 }
+	my @locations = sort { $a <=> $b } keys %map;
+	
+	# process each position
+	foreach ( @positions ) {
+		
+		# calculate postion as a percentage of length
+		my $position = round(( $_ * 100 ) / $length );	
+	
+		# map the position to a location on the scale; this is the cool part
+		my $location = 0;
+		for ( my $i = 0; $i <= $#locations; $i++ ) {
+		
+			if ( $position >= 0 and $position <= $locations[ $i ] ) {
+			
+				$location = $locations[ $i ];
+				last;
+			
+			}
+			elsif ( $position > $locations[ $i ] and $position <= $locations[ $i + 1 ] ) { $location = $locations[ $i + 1 ] }
+			elsif ( $position <= 100 ) { $location = 100 }
+		
+		}
+	
+		# increment
+		$map{ $location }++;
+		
+	}
+
+	# done
+	return \%map;
+	
+}
+
+
+sub positions {
+
+	my ( $self ) = @_;
+	my @p = ();
+	my $query = $self->{ query };
+	my $text  = $self->{ text };	
+	while ( $text =~ m/$query/gi ) { push @p, pos $text }
+	return @p;
+
 }
 
 
@@ -241,16 +314,26 @@ Lingua::Concordance - Keyword-in-context (KWIC) search interface
 
 =head1 SYNOPSIS
 
+  # require
   use Lingua::Concordance;
+
+  # initialize
   $concordance = Lingua::Concordance->new;
   $concordance->text( 'A long time ago, in a galaxy far far away...' );
   $concordance->query( 'far' );
+
+  # do the work
   foreach ( $concordance->lines ) { print "$_\n" }
+
+  # modify the query and map (graph) it
+  $concordance->query( 'i' );
+  $map = $concordance->map;
+  foreach ( sort { $a <=> $b } keys $%map ) { print "$_\t", $$map{ $_ }, "\n" }
 
 
 =head1 DESCRIPTION
 
-Given a scalar (such as the content of a plain text electronic book or journal article) and a regular expression, this module implements a simple keyword-in-context (KWIC) search interface -- a concordance. Its purpuse is to return lists of lines from a text containing the given expression. See the Discussion section, below, for more detail.
+Given a scalar (such as the content of a plain text electronic book or journal article) and a regular expression, this module implements a simple keyword-in-context (KWIC) search interface -- a concordance. Its purpuse is two-fold. First, it is intended to return lists of lines from a text containing the given expression. Second, it is intended to map the general location in the text where the expression appears. For example, the first half of the text, the last third, the third quarter, etc. See the Discussion section, below, for more detail.
 
 
 =head1 METHODS
@@ -346,12 +429,49 @@ Used in combination with the sort method, above, this is good for looking for te
 
 Return a list of lines from the text matching the query. Our reason de existance:
 
+  # get the line containing the query
   @lines = $concordance->lines;
+
+
+=head2 positions
+
+Return an array of integers representing the locations (offsets) of the query in the text.
+
+  # get positions of queries in a text
+  @positions = $concordance->positions;
+
+
+=head2 scale
+
+Set or get the scale for mapping query locations to positions between 0 and 100. 
+
+  # set the scale
+  $concordance->scale( 5 );
+
+  # get the scale
+  $scale = $concordance->scale;
+
+This number is used to initialize a scale from 0 to 100 where scale is a percentage of the whole text. A value of 2 will divide the text into two halves. A value of 3 will divide the text into three parts, all equal to 33% of the text's length. A value of 5 will create five equal parts all equal to 20% of the text. 
+
+The default is 10.
+
+
+=head2 map
+
+Returns a reference to a hash where the keys are integers representing locations on a scale between 0 and 100, inclusive. The values are the number of matched queries located at that position.
+
+  # map the query to percentages of the text
+  $map = $concordance->map;
+
+  # list the sections of the text where the query appears
+  foreach ( sort { $a <=> $b } keys $%map ) { print "$_\t", $$map{ $_ }, "\n" }
+
+The output of this method is intended to facilitate the graphing of matched queries on a bar chart where the hash's keys represent ranges along the X-axis and the values represent points up and down the Y-axis. The script in this distribution named bin/concordance.pl illustrates how to do this with a Perl module caled Text::BarGraph.
 
 
 =head1 DISCUSSION
 
-[Elaborate upon a number of things here such as but not limited to: 1) the history of concordances and concordance systems, 2) the usefulness of concordances in the study of linguistics, 3) how to expoit regular expressions to get the most out of a text and find interesting snipettes, and 4) how the module might be implemented in scripts and programs.]
+[Elaborate upon a number of things here such as but not limited to: 1) the history of concordances and concordance systems, 2) the usefulness of concordances in the study of literature, 3) how to expoit regular expressions to get the most out of a text and finding interesting snipettes, and 4) how the module might be implemented in scripts and programs.]
 
 
 =head1 BUGS
@@ -381,6 +501,15 @@ The internal _by_match subroutine, the one used to sort results by the matching 
 
 =back
 
+=head1 CHANGES
+
+=over
+
+* June 9, 2009 - initial release
+
+* August 29, 2010 - added the postions, scale, and map methods
+
+=back
 
 =head1 ACKNOWLEDGEMENTS
 

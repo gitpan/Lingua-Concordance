@@ -1,11 +1,12 @@
-use Test::More tests => 25;
+use Test::More tests => 29;
 use strict;
 
 # Concordance.t - regression texts against Lingua::Concordance
 
 # Eric Lease Morgan <eric_morgan@infomotions.com>
-# June 7, 2009 - first cut
-# June 8, 2009 - tweaking
+# June 7, 2009    - first cut
+# June 8, 2009    - tweaking
+# August 29, 2010 - added tests for methods scale, positions, and map
 
 
 # configure defaults; should be defined same as in Lingua::Concordance.pm
@@ -24,6 +25,7 @@ isa_ok( $concordance, 'Lingua::Concordance' );
 is( $concordance->sort, 'none', 'default sort' );
 is( $concordance->radius, 20, 'default radius' );
 is( $concordance->ordinal, 1, 'default ordinal' );
+is( $concordance->scale, 10, 'default scale' );
 
 # slurp test data
 my $text = do { local $/; <DATA> };
@@ -107,6 +109,18 @@ is( $lines[ 0 ], 'Or Life In The Woods by Henry David Thor', 'lines (sort: right
 $concordance->sort( 'match' );
 @lines = $concordance->lines;
 is( $lines[ 1 ], ' alone, in the woods, a mile from any ne', 'lines (sort: match)' );
+
+# set/get scale
+$concordance->scale( 5 );
+is( $concordance->scale, 5, 'set/get scale' );
+
+# get positions
+my @positions = $concordance->positions;
+is( $positions[ 0 ], 33, 'get positions' );
+
+# get map
+my $map = $concordance->map;
+is( $$map{ '20' }, 2, 'get map' );
 
 # done, whew!
 exit;

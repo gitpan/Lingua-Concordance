@@ -11,9 +11,11 @@ dependencies:
   $ make install
 
 Once installed, you should be able to use the concordance.pl script
-found in the bin directory. Sample data, walden.txt, is found in the etc
-directory. Try searching for human.
+found in the bin directory. Sample data -- walden.txt -- is found in the
+etc directory. Try searching for human. For example:
+
+  $ bin/concordance.pl etc/walden.txt human
 
 -- 
 Eric Lease Morgan <eric_morgan@infomotions.com>
-June 8, 2009
+August 29, 2010
