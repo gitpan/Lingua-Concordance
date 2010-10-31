@@ -1,15 +1,23 @@
 --- #YAML:1.0
-name:                Lingua-Concordance
-version:             0.02
-abstract:            Keyword-in-context (KWIC) search interface
-license:             ~
-author:              
+name:               Lingua-Concordance
+version:            0.04
+abstract:           Keyword-in-context (KWIC) search interface
+author:
     - Eric Lease Morgan
-generated_by:        ExtUtils::MakeMaker version 6.42
-distribution_type:   module
-requires:     
-    Math::Round:                   0
-    Test::More:                    0
+license:            unknown
+distribution_type:  module
+configure_requires:
+    ExtUtils::MakeMaker:  0
+build_requires:
+    ExtUtils::MakeMaker:  0
+requires:
+    Math::Round:  0
+    Test::More:   0
+no_index:
+    directory:
+        - t
+        - inc
+generated_by:       ExtUtils::MakeMaker version 6.56
 meta-spec:
-    url:     http://module-build.sourceforge.net/META-spec-v1.3.html
-    version: 1.3
+    url:      http://module-build.sourceforge.net/META-spec-v1.4.html
+    version:  1.4

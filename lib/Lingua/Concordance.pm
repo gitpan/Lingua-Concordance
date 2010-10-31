@@ -3,9 +3,11 @@ package Lingua::Concordance;
 # Concordance.pm - keyword-in-context (KWIC) search interface
 
 # Eric Lease Morgan <eric_morgan@infomotions.com>
-# June    7, 2009 - first investigations
-# June    8, 2009 - tweaked _by_match; still doesn't work quite right
-# August 29, 2010 - added scale, positions, and map methods
+# June     7, 2009 - first investigations
+# June     8, 2009 - tweaked _by_match; still doesn't work quite right
+# August  29, 2010 - added scale, positions, and map methods
+# August  31, 2010 - removed \r & \t from input, duh!
+# October 31, 2010 - removed syntax error from synopsis
 
 
 # configure defaults
@@ -20,7 +22,7 @@ use warnings;
 use Math::Round;
 
 # define
-our $VERSION = '0.02';
+our $VERSION = '0.04';
 
 
 sub new {
@@ -52,6 +54,8 @@ sub text {
 	if ( $text ) {
 	
 		# clean...
+		$text =~ s/\t/ /g;
+		$text =~ s/\r/ /g;
 		$text =~ s/\n/ /g;
 		$text =~ s/ +/ /g;
 		$text =~ s/\b--\b/ -- /g;
@@ -328,7 +332,7 @@ Lingua::Concordance - Keyword-in-context (KWIC) search interface
   # modify the query and map (graph) it
   $concordance->query( 'i' );
   $map = $concordance->map;
-  foreach ( sort { $a <=> $b } keys $%map ) { print "$_\t", $$map{ $_ }, "\n" }
+  foreach ( sort { $a <=> $b } keys %map ) { print "$_\t", $$map{ $_ }, "\n" }
 
 
 =head1 DESCRIPTION
@@ -464,7 +468,7 @@ Returns a reference to a hash where the keys are integers representing locations
   $map = $concordance->map;
 
   # list the sections of the text where the query appears
-  foreach ( sort { $a <=> $b } keys $%map ) { print "$_\t", $$map{ $_ }, "\n" }
+  foreach ( sort { $a <=> $b } keys %map ) { print "$_\t", $$map{ $_ }, "\n" }
 
 The output of this method is intended to facilitate the graphing of matched queries on a bar chart where the hash's keys represent ranges along the X-axis and the values represent points up and down the Y-axis. The script in this distribution named bin/concordance.pl illustrates how to do this with a Perl module caled Text::BarGraph.
 
@@ -508,6 +512,8 @@ The internal _by_match subroutine, the one used to sort results by the matching 
 * June 9, 2009 - initial release
 
 * August 29, 2010 - added the postions, scale, and map methods
+
+* October 31, 2010 - removed syntax error from synopsis ("Thank you, Pankaj Mehra.")
 
 =back
 
